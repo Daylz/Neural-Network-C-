@@ -3,17 +3,35 @@
 public class NeuralNetwork
 {
     public int[] sizes;
-    public int numLayers;
     public float[] inputs;
     public float[][] biases;
     public float[][][] weights;
 
+    public NeuralNetworkData nnd;
+
     public NeuralNetwork(int[] sizes)
     {
         this.sizes = sizes;
-        numLayers = sizes.Length;
 
-        biases = new float[sizes.Length - 1][];
+        GenerateBiases();
+        GenerateWeights();
+
+        this.nnd = new NeuralNetworkData
+        {
+            sizes = this.sizes,
+            biases = this.biases,
+            weights = this.weights
+        };
+
+        //PrintBiases();
+        //PrintWeights();
+        //PrintTotalParams();
+    }
+
+    private void GenerateBiases()
+    {
+        this.biases = new float[sizes.Length - 1][];
+
         for (int i = 0; i < sizes.Length - 1; i++)
         {
             biases[i] = new float[sizes[i + 1]];
@@ -23,10 +41,12 @@ public class NeuralNetwork
                 biases[i][j] = Random.Range(-3.0f, 3.0f);
             }
         }
+    }
 
-        //PrintBiases();
+    private void GenerateWeights()
+    {
+        this.weights = new float[sizes.Length - 1][][];
 
-        weights = new float[sizes.Length - 1][][];
         for (int i = 0; i < weights.Length; i++)
         {
             weights[i] = new float[sizes[i + 1]][];
@@ -41,10 +61,6 @@ public class NeuralNetwork
                 }
             }
         }
-
-        //PrintWeights();
-
-        //PrintTotalParams();
     }
 
     public float[] CalculateOutput(float[] inputs)
@@ -56,20 +72,26 @@ public class NeuralNetwork
             outputs = new float[sizes[layerId]];
 
             for (int neuronId = 0; neuronId < sizes[layerId]; neuronId++)
-            { 
+            {
+                // Dot product weights matrix * inputs vector
                 for (int weightId = 0; weightId < sizes[layerId - 1]; weightId++)
-                {
-                    // Dot product weights matrix * inputs vector
-                    outputs[neuronId] += weights[layerId-1][neuronId][weightId] * inputs[weightId];
+                {                    
+                    outputs[neuronId] += weights[layerId - 1][neuronId][weightId] * inputs[weightId];
                 }
 
-                outputs[neuronId] = Sigmoid(outputs[neuronId] + biases[layerId-1][neuronId]);
+                // Adding neuron bias to calculated value
+                outputs[neuronId] = Sigmoid(outputs[neuronId] + biases[layerId - 1][neuronId]);
             }
 
             inputs = outputs;
         }
 
         return outputs;
+    }
+
+    public NeuralNetworkData GetData()
+    { 
+        return this.nnd;
     }
 
     float Sigmoid(float x)
