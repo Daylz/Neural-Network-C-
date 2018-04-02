@@ -6,7 +6,8 @@ using Daylz.Mathf;
 
 public class NeuralNetworkManager : MonoBehaviour
 {
-    public int AmountToSpawn;
+    public int NewDNA;
+    public int ChildrenOfBest;
     public GameObject ObjectToSpawn;
     public Transform SpawnPosition;
 
@@ -24,9 +25,10 @@ public class NeuralNetworkManager : MonoBehaviour
     public TextMeshProUGUI generationTxt;
     public TextMeshProUGUI timeLeftTxt;
 
-    public float mutationRate = 0.1f;
+    public float biasMutationRate = 0.1f;
+    public float weightMutationRate = 0.1f;
 
-    int[] sizes = { 9, 4, 4, 8 };
+    int[] sizes = { 4, 8, 8, 2 };
 
     System.Random rand = new System.Random();
 
@@ -47,7 +49,8 @@ public class NeuralNetworkManager : MonoBehaviour
         }
         objects = new List<GameObject>();
 
-        for (int i = 0; i < AmountToSpawn; i++)
+        // Children of best parent
+        for (int i = 0; i < ChildrenOfBest; i++)
         {
             float[][] newBias = bestObjectNnd != null ? CopyNewBiasArrayByValue(bestObjectNnd.biases) : null;
             float[][,] newWeights = bestObjectNnd != null ? CopyNewWeightArrayByValue(bestObjectNnd.weights) : null;
@@ -60,7 +63,24 @@ public class NeuralNetworkManager : MonoBehaviour
             };
 
             GameObject obj = Instantiate(ObjectToSpawn, SpawnPosition.position, Quaternion.identity);
-            obj.name = "Objects" + i;
+            obj.name = "ObjectsA" + i;
+            obj.GetComponent<NeuralNetworkObjectInterfacer>().InitNeuralNetwork(nnd);
+            obj.transform.parent = this.transform;
+            objects.Add(obj);
+        }
+
+        // Random new genes
+        for (int i = 0; i < NewDNA / 2; i++)
+        {
+            NeuralNetworkData nnd = new NeuralNetworkData
+            {
+                sizes = this.sizes,
+                biases = GenerateNewBiases(),
+                weights = GenerateNewWeights()
+            };
+
+            GameObject obj = Instantiate(ObjectToSpawn, SpawnPosition.position, Quaternion.identity);
+            obj.name = "ObjectsB" + i;
             obj.GetComponent<NeuralNetworkObjectInterfacer>().InitNeuralNetwork(nnd);
             obj.transform.parent = this.transform;
             objects.Add(obj);
@@ -145,7 +165,7 @@ public class NeuralNetworkManager : MonoBehaviour
 
             for (int i = 1; i < bestNNObjects.Count; i++)
             {
-                if (bestNNObjects[i].GetDistance() < bestNNObject.GetDistance())
+                if (bestNNObjects[i].GetDistance() > bestNNObject.GetDistance())
                 {
                     bestNNObject = bestNNObjects[i];
                 }
@@ -202,7 +222,7 @@ public class NeuralNetworkManager : MonoBehaviour
         {
             for (int j = 0; j < biases[i].Length; j++)
             {
-                if (UnityEngine.Random.value < mutationRate)
+                if (UnityEngine.Random.value < biasMutationRate)
                 {
                     biases[i][j] = rand.NextGaussianFloat();
                 }                
@@ -220,7 +240,7 @@ public class NeuralNetworkManager : MonoBehaviour
             {
                 for (int k = 0; k < weights[i].GetLength(1); k++)
                 {
-                    if (UnityEngine.Random.value < mutationRate)
+                    if (UnityEngine.Random.value < weightMutationRate)
                     {
                         weights[i][j, k] = rand.NextGaussianFloat();
                     }
@@ -266,5 +286,17 @@ public class NeuralNetworkManager : MonoBehaviour
         }
 
         return weightsCopy;
+    }
+
+    private int TotalWeights()
+    {
+        int result = 0;
+
+        for (int i = 1; i < sizes.Length; i++)
+        {
+            result += sizes[i - 1] * sizes[i];
+        }
+
+        return result;
     }
 }

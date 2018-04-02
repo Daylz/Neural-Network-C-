@@ -351,7 +351,7 @@ namespace Daylz.Mathf
 
             str += "{ " + a[0];
 
-            for (int i = 0; i < a.Length; i++)
+            for (int i = 1; i < a.Length; i++)
             {
                 str += ", " + a[i];
             }

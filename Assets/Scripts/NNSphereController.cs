@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using Daylz.Mathf;
 
 public class NNSphereController : ANeuralNetworkObjectController
 {
@@ -8,11 +9,12 @@ public class NNSphereController : ANeuralNetworkObjectController
     public Vector3 lastPosition;
 
     public float speed = 1f;
+    public float rotationSpeed = 10f;
 
     public Material aliveMaterial;
     public Material deadMaterial;
 
-    private Rigidbody rb;
+    //private Rigidbody rb;
 
     private float moveHorizontal;
     private float moveVertical;
@@ -23,7 +25,7 @@ public class NNSphereController : ANeuralNetworkObjectController
 
     private void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        //rb = GetComponent<Rigidbody>();
         lastPosition = this.transform.position;
         timeSinceLastCheckpoint = 0f;
 
@@ -36,24 +38,31 @@ public class NNSphereController : ANeuralNetworkObjectController
         lastPosition = transform.position;
         timeSinceLastCheckpoint += Time.deltaTime;
 
-        Vector3 position = this.transform.position;
+        /*moveHorizontal = Input.GetAxis("Horizontal");
+        moveVertical = Input.GetAxis("Vertical");*/
 
+        Vector3 position = this.transform.position;
+        Quaternion rotation = this.transform.rotation;
+        position += moveVertical * Time.deltaTime * speed * transform.up;
+        transform.Rotate(new Vector3(0f, 0f, -moveHorizontal * Time.deltaTime * rotationSpeed));
+
+        this.transform.position = position;
     }
 
-    private void FixedUpdate()
+    /*private void FixedUpdate()
     {
         //moveHorizontal = Input.GetAxis("Horizontal");
         //moveVertical = Input.GetAxis("Vertical");
 
         Vector3 movement = new Vector3(moveHorizontal, 0.0f, moveVertical);
         rb.AddForce(movement * speed);     
-    }
+    }*/
 
     // Inputs that are fed to the Neural Network
     override public float[] GetInputs()
     {
-        float[] inputs = new float[9];
-        float maxDistance = 20.0f;
+        float[] inputs = new float[4];
+        float maxDistance = 50.0f;
         RaycastHit hit;
 
         if (!initialized)
@@ -62,53 +71,60 @@ public class NNSphereController : ANeuralNetworkObjectController
         }
 
         // Up
-        if (Physics.Raycast(transform.position, new Vector3(0,0,1), out hit, maxDistance))
+        /*if (Physics.Raycast(transform.position, new Vector3(0, 1, 0), out hit, maxDistance))
         {
-            inputs[0] = hit.distance;
+            inputs[0] = hit.distance / maxDistance;
         }
         // Down
-        if (Physics.Raycast(transform.position, new Vector3(0, 0, -1), out hit, maxDistance))
+        if (Physics.Raycast(transform.position, new Vector3(0, -1, 0), out hit, maxDistance))
         {
-            inputs[1] = hit.distance;
+            inputs[1] = hit.distance / maxDistance;
         }
         // Left
         if (Physics.Raycast(transform.position, new Vector3(-1, 0, 0), out hit, maxDistance))
         {
-            inputs[2] = hit.distance;
+            inputs[2] = hit.distance / maxDistance;
         }
         // Right
         if (Physics.Raycast(transform.position, new Vector3(1, 0, 0), out hit, maxDistance))
         {
-            inputs[3] = hit.distance;
-        }
+            inputs[3] = hit.distance / maxDistance;
+        }*/
         // Up Left
-        if (Physics.Raycast(transform.position, new Vector3(-1, 0, 1), out hit, maxDistance))
+        if (Physics.Raycast(transform.position, -transform.right + transform.up, out hit, maxDistance))
         {
-            inputs[4] = hit.distance;
+            inputs[0] = hit.distance / maxDistance;
         }
         // Up Right
-        if (Physics.Raycast(transform.position, new Vector3(1, 0, 1), out hit, maxDistance))
+        if (Physics.Raycast(transform.position, transform.right + transform.up, out hit, maxDistance))
         {
-            inputs[5] = hit.distance;
+            inputs[1] = hit.distance / maxDistance;
         }
         // Down Left
-        if (Physics.Raycast(transform.position, new Vector3(-1, 0, -1), out hit, maxDistance))
+        if (Physics.Raycast(transform.position, -transform.right + -transform.up, out hit, maxDistance))
         {
-            inputs[6] = hit.distance;
+            inputs[2] = hit.distance / maxDistance;
         }
         // Down Right
-        if (Physics.Raycast(transform.position, new Vector3(1, 0, -1), out hit, maxDistance))
+        if (Physics.Raycast(transform.position, transform.right + -transform.up, out hit, maxDistance))
         {
-            inputs[7] = hit.distance;
+            inputs[3] = hit.distance / maxDistance;
         }
 
-        inputs[8] = rb.velocity.magnitude;
+        /*inputs[8] = rb.velocity.magnitude;*/
 
         return inputs;
     }
 
     // Controller inputs that are given to the object by the Neural Network
-    override public void SetInputs(int inputId)
+    override public void SetInputs(float[] inputs)
+    {
+        moveHorizontal = inputs[0] - 0.5f;
+        moveVertical = inputs[1] - 0.5f;
+    }
+
+    // Controller inputs that are given to the object by the Neural Network
+    /*override public void SetInputs(int inputId)
     {
         switch (inputId)
         {
@@ -153,12 +169,12 @@ public class NNSphereController : ANeuralNetworkObjectController
                 moveVertical = 1f;
                 break;
             // Nothing
-            /*case 8:
+            case 8:
                 moveHorizontal = 0f;
                 moveVertical = 0f;
-                break;*/
+                break;
         }
-    }
+    }*/
 
     private void OnTriggerEnter(Collider other)
     {
@@ -166,6 +182,7 @@ public class NNSphereController : ANeuralNetworkObjectController
 
         if (checkpoint.Equals(other.name))
         {
+            distanceTravelled = 0;
             timeSinceLastCheckpoint = 0;
             nextCheckPoint++;
             Score += nextCheckPoint;
@@ -189,5 +206,10 @@ public class NNSphereController : ANeuralNetworkObjectController
         {
             Debug.Log("Output " + i + ": " + floats[i]);
         }
+    }
+
+    public override int CalculatedScore()
+    {
+        return (int)(Score + distanceTravelled);
     }
 }

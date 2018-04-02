@@ -21,9 +21,9 @@ public class NeuralNetworkObjectInterfacer : MonoBehaviour
         {
             float[] inputs = nnctlr.GetInputs();
             float[] outputs = nn.CalculateOutput(inputs);
-            int inputId = GetStrongerOutputIndex(outputs);
+            //int inputId = GetStrongerOutputIndex(outputs);
 
-            nnctlr.SetInputs(inputId);
+            nnctlr.SetInputs(outputs);
         }
     }
 

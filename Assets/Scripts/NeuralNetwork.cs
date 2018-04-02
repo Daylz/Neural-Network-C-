@@ -21,8 +21,6 @@ public class NeuralNetwork
     {
         float[] outputs = { };
 
-        inputs = MathExtension.Sigmoid(inputs);
-
         for (int layerId = 1; layerId < sizes.Length; layerId++)
         {
             outputs = new float[sizes[layerId]];
